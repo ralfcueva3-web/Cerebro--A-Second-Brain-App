@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-//IUser is a model ............. model is an instance of a model class
 
 export interface IUser extends Document {
     username: string;
