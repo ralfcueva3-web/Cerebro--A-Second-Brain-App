@@ -8,4 +8,4 @@ const tagSchema = new Schema<ITag>({
 }, {timestamps: true}
 )
 
-module.exports = mongoose.model<ITag>("Tag", tagSchema);
+export const Tag = mongoose.model<ITag>("Tag", tagSchema);
