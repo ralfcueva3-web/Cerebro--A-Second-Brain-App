@@ -25,4 +25,23 @@ export const signup = async (req: Request, res: Response) => {
 
 //=============Signin============
 
+export const signin = async (req: Request, res: Response) => {
+    try{
+        const { username, password} = req.body;
 
+        const user = await User.findOne({username});
+        if(!user){
+            return res.status(403).json({msg: "Wrong Credentials"});
+        }
+        const match = await bcrypt.compare(password, user.password)
+        if(!match){
+            return res.status(403).json({msg: "Wrong Credentials"});
+        }
+        const token = jwt.sign({id: user._id}, process.env.JWT_SECRET as string, {
+            expiresIn: "7d"
+        })
+        res.status(200).json({token});
+    } catch(err){
+        res.status(500).json({msg: "Something went wrong"});
+    }
+}

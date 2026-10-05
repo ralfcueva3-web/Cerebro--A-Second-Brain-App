@@ -1,5 +1,5 @@
 import {Router} from "express";
-import { signup } from "../controllers/authController.js";
+import { signin, signup } from "../controllers/authController.js";
 const router = Router();
 
 
@@ -10,8 +10,6 @@ router.post("/signup", signup);
 
 // ===========signin===========
 
-router.post("/signin", (req, res) => {
-    res.send("signin ok");
-} )
+router.post("/signin", signin)
 
 export default router;
