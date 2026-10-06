@@ -1,47 +1,125 @@
 import { type Request, type Response } from "express";
-import { Link } from "../models/Link.js";
-import { Content } from "../models/Content.js";
-import { User } from "../models/User.js";
 import crypto from "crypto";
 
-//================Share Brain===========
+import { Link } from "../models/Link.js";
+import { User } from "../models/User.js";
+import { Content } from "../models/Content.js";
 
-export const shareBrain = async (req: Request, res: Response) => {
-    try{
+
+// ================= SHARE BRAIN =================
+
+export const shareBrain = async (
+    req: Request,
+    res: Response
+) => {
+
+    try {
+
         const { share } = req.body;
 
-        if(share){
-            const existing = await Link.findOne({userId: req.userId})
-            if(existing){
-                return res.status(200).json({hash: existing.hash});
-            }
-            const hash = crypto.randomBytes(8).toString("hex");
-            await Link.create({hash, userId: req.userId});
-            return res.status(200).json({ hash });
+
+        // ================= ENABLE SHARING =================
+
+        if (share) {
+
+            // Generate random hash
+            const hash = crypto
+                .randomBytes(8)
+                .toString("hex");
+
+
+            console.log("USER ID:", req.userId);
+
+
+            // Create share link
+            await Link.create({
+                hash,
+                userId: req.userId
+            });
+
+
+            return res.status(200).json({
+                hash
+            });
         }
-        await Link.deleteOne({userId: req.userId});
-        res.status(200).json({msg: "Sharing disabled"});
+
+
+        // ================= DISABLE SHARING =================
+
+        await Link.deleteOne({
+            userId: req.userId
+        });
+
+
+        return res.status(200).json({
+            msg: "Sharing disabled"
+        });
+
+
     } catch (err) {
-        res.status(500).json({msg: "Something went wrong"})
+
+        console.log("SHARE BRAIN ERROR:", err);
+
+        res.status(500).json({
+            msg: "Something went wrong"
+        });
     }
-}
+};
 
-//================getting brain===================
 
-export const getSharedBrain = async (req: Request, res:Response) => {
-    try{
-        const shareLink  = req.params.shareLink as string
-        
-        const link = await Link.findOne({ hash: shareLink});
-        if (!link){
-            return res.status(404).json({msg: "Invalid share link"})
+
+// ================= GET SHARED BRAIN =================
+
+export const getSharedBrain = async (
+    req: Request,
+    res: Response
+) => {
+
+    try {
+
+        const shareLink = req.params.shareLink as string;
+
+
+        // Find share link
+        const link = await Link.findOne({
+            hash: shareLink
+        });
+
+
+        if (!link) {
+
+            return res.status(404).json({
+                msg: "Invalid share link"
+            });
         }
 
-        const user = await User.findById(link.userId);
-        const content = await Content.find({userId: link.userId}).populate("tags", "title");
 
-        res.status(200).json({username: user?.username, content});
-    } catch(err){
-        res.status(500).json({msg: "Something went wrong"})
+        // Find owner
+        const user = await User.findById(
+            link.userId
+        );
+
+
+        // Find user's content
+        const content = await Content
+            .find({
+                userId: link.userId
+            })
+            .populate("tags", "title");
+
+
+        return res.status(200).json({
+            username: user?.username,
+            content
+        });
+
+
+    } catch (err) {
+
+        console.log("GET SHARED BRAIN ERROR:", err);
+
+        res.status(500).json({
+            msg: "Something went wrong"
+        });
     }
-}
+};
