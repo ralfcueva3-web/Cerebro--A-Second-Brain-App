@@ -1,64 +1,66 @@
-// import {type Request, type Response} from "express";
-// import jwt from "jsonwebtoken";
-// import bcrypt from "bcrypt";
-// import { User } from "../models/User.js";
-
-
-// //============Signup logic===========
-// export const signup = async (req: Request, res: Response) => {
-//     try{
-//         const { username, password } = req.body;
-
-//         const existing = await User.findOne({username});
-//         if(existing){
-//             return res.status(403).json({ msg: "User already exists"});
-//         }
-
-//         const hashedPassword = await bcrypt.hash(password, 10);
-//         await User.create({username, password: hashedPassword});
-
-//         res.status(200).json({msg: "Signed Up"});
-//     } catch(err) {
-//         res.status(500).json({msg: "Something went wrong"})
-//     }
-// }
-
-// //=============Signin============
-
-// export const signin = async (req: Request, res: Response) => {
-//     try{
-//         const { username, password} = req.body;
-
-//         const user = await User.findOne({username});
-//         if(!user){
-//             return res.status(403).json({msg: "Wrong Credentials"});
-//         }
-//         const match = await bcrypt.compare(password, user.password)
-//         if(!match){
-//             return res.status(403).json({msg: "Wrong Credentials"});
-//         }
-//         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET as string, {
-//             expiresIn: "7d"
-//         })
-//         res.status(200).json({token});
-//     } catch(err){
-//         res.status(500).json({msg: "Something went wrong"});
-//     }
-// }
-
-
 import { type Request, type Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { User } from "../models/User.js";
 
-// ================= SIGNUP =================
+// ==================================================
+// SIGNUP
+// ==================================================
 
 export const signup = async (req: Request, res: Response) => {
     try {
         const { username, password } = req.body;
 
-        const existing = await User.findOne({ username });
+        // -------------------------------
+        // Check if username/password exist
+        // -------------------------------
+
+        if (!username || !password) {
+            return res.status(400).json({
+                msg: "Username and password are required"
+            });
+        }
+
+        // -------------------------------
+        // Username validation
+        // 3-10 characters
+        // Only letters and numbers
+        // -------------------------------
+
+        const usernameRegex = /^[a-zA-Z0-9]{3,10}$/;
+
+        if (!usernameRegex.test(username)) {
+            return res.status(400).json({
+                msg: "Username must be 3-10 characters long and contain only letters and numbers"
+            });
+        }
+
+        // -------------------------------
+        // Password validation
+        // 8-20 characters
+        // At least:
+        // 1 lowercase
+        // 1 uppercase
+        // 1 number
+        // 1 special character
+        // -------------------------------
+
+        const passwordRegex =
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,20}$/;
+
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({
+                msg: "Password must be 8-20 characters and contain at least one uppercase letter, one lowercase letter, one number and one special character"
+            });
+        }
+
+        // -------------------------------
+        // Check existing user
+        // -------------------------------
+
+        const existing = await User.findOne({
+            username
+        });
 
         if (existing) {
             return res.status(403).json({
@@ -66,40 +68,74 @@ export const signup = async (req: Request, res: Response) => {
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // -------------------------------
+        // Hash password
+        // -------------------------------
+
+        const hashedPassword = await bcrypt.hash(
+            password,
+            10
+        );
+
+        // -------------------------------
+        // Create user
+        // -------------------------------
 
         await User.create({
             username,
             password: hashedPassword
         });
 
-        res.status(200).json({
+        return res.status(200).json({
             msg: "Signed Up"
         });
 
     } catch (err) {
+
         console.log("SIGNUP ERROR:", err);
 
-        res.status(500).json({
+        return res.status(500).json({
             msg: "Something went wrong"
         });
     }
 };
 
 
-// ================= SIGNIN =================
+// ==================================================
+// SIGNIN
+// ==================================================
 
 export const signin = async (req: Request, res: Response) => {
     try {
         const { username, password } = req.body;
 
-        const user = await User.findOne({ username });
+        // -------------------------------
+        // Check if username/password exist
+        // -------------------------------
+
+        if (!username || !password) {
+            return res.status(400).json({
+                msg: "Username and password are required"
+            });
+        }
+
+        // -------------------------------
+        // Find user
+        // -------------------------------
+
+        const user = await User.findOne({
+            username
+        });
 
         if (!user) {
             return res.status(403).json({
                 msg: "Invalid username or password"
             });
         }
+
+        // -------------------------------
+        // Compare password
+        // -------------------------------
 
         const passwordMatch = await bcrypt.compare(
             password,
@@ -112,8 +148,10 @@ export const signin = async (req: Request, res: Response) => {
             });
         }
 
-        // IMPORTANT:
-        // JWT payload contains "userId"
+        // -------------------------------
+        // Generate JWT
+        // -------------------------------
+
         const token = jwt.sign(
             {
                 userId: user._id.toString()
@@ -121,14 +159,19 @@ export const signin = async (req: Request, res: Response) => {
             process.env.JWT_SECRET as string
         );
 
-        res.status(200).json({
+        // -------------------------------
+        // Send token
+        // -------------------------------
+
+        return res.status(200).json({
             token
         });
 
     } catch (err) {
+
         console.log("SIGNIN ERROR:", err);
 
-        res.status(500).json({
+        return res.status(500).json({
             msg: "Something went wrong"
         });
     }
