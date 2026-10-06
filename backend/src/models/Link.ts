@@ -10,4 +10,4 @@ const linkSchema = new Schema<ILink>({
 }, {timestamps: true}
 )
 
-module.exports = mongoose.model<ILink>("Link", linkSchema);
+export const Link = mongoose.model<ILink>("Link", linkSchema);
